@@ -1,0 +1,10 @@
+{
+  "name": "know-me-quiz",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/quiz.test.mjs"
+  }
+}
