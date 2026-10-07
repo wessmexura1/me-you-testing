@@ -1,7 +1,7 @@
 import { quizzes, createAttempt, validAttempt, calculateResult } from './quiz-data.mjs';
 
 const app = document.querySelector('#app');
-const landingMarkup = app.innerHTML.replaceAll('↗', '＋');
+const landingMarkup = app.innerHTML;
 const STORAGE_KEY = 'know-me.attempts.v1';
 const attempts = readAttempts();
 const needsResume = new Set(Object.keys(attempts).filter(id => !attempts[id].complete));
@@ -23,7 +23,7 @@ function save() {
 }
 function route() {
   const [quizId, screen] = location.hash.slice(1).split('/');
-  return quizzes[quizId] ? { quizId, screen: ['start', 'quiz', 'result', 'review'].includes(screen) ? screen : 'start' } : { screen: 'home' };
+  return Object.hasOwn(quizzes, quizId) ? { quizId, screen: ['start', 'quiz', 'result', 'review'].includes(screen) ? screen : 'start' } : { screen: 'home' };
 }
 function navigate(quizId = '', screen = '') {
   const hash = quizId ? `#${quizId}/${screen}` : '';
@@ -60,14 +60,16 @@ function reviewScreen(quiz) {
   return shell(quiz, `<h1 class="review-title" tabindex="-1" data-focus>Вспомним детали</h1><p class="review-intro">${label(quiz)} · ${result.correct} из 15 правильных ответов</p><div class="review-list">${result.rows.map((row, index) => `<article class="review-item"><div class="review-meta"><span>Вопрос ${index + 1} из 15</span><span class="outcome ${row.outcome}">${outcomes[row.outcome]}</span></div><h2>${escape(row.question.text)}</h2>${row.outcome === 'correct' ? `<p class="review-answer"><strong>${escape(row.correct.text)}</strong></p>` : `<p class="review-answer">Твой ответ: <strong>${row.selected ? escape(row.selected.text) : 'Пропущен'}</strong></p><p class="review-answer">Правильный ответ: <strong>${escape(row.correct.text)}</strong></p>`}${row.question.note ? `<p class="review-note">${escape(row.question.note)}</p>` : ''}</article>`).join('')}</div><div class="button-row review-actions"><button class="btn" data-action="restart">Пройти ещё раз</button><button class="btn secondary" data-action="home">На главную</button></div>`);
 }
 function render() {
+  const previousProgress = app.querySelector('.progress-fill')?.style.width ?? '0%';
   let { quizId, screen } = route();
   const quiz = quizzes[quizId];
   const attempt = attempts[quizId];
   if (screen === 'quiz' && (!attempt || needsResume.has(quizId))) screen = 'start';
   if (screen === 'quiz' && attempt?.complete) screen = 'result';
   if (['result', 'review'].includes(screen) && !attempt?.complete) screen = 'start';
-  document.title = screen === 'home' ? 'Насколько хорошо ты меня знаешь?' : screen === 'quiz' ? `Вопрос ${attempt.index + 1} из 15 · ${quiz.label}` : `${quiz.title} · ты & я`;
+  document.title = screen === 'home' ? 'Насколько хорошо ты меня знаешь?' : screen === 'quiz' ? `Вопрос ${attempt.index + 1} из 15 · ${quiz.label}` : quiz.title;
   app.innerHTML = screen === 'home' ? landingMarkup : screen === 'start' ? startScreen(quiz) : screen === 'quiz' ? questionScreen(quiz) : screen === 'review' ? reviewScreen(quiz) : resultScreen(quiz);
+  app.querySelector('.progress-fill')?.style.setProperty('--progress-from', previousProgress);
   window.scrollTo({ top: 0, behavior: 'instant' });
   const heading = app.querySelector('[data-focus]');
   if (heading) heading.focus({ preventScroll: true });
